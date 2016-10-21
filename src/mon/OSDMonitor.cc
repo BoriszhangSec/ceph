@@ -241,6 +241,7 @@ void OSDMonitor::update_from_paxos(bool *need_bootstrap)
       f = mon->quorum_features;
     if (!f)
       f = -1;
+    dout(20) << __func__ << " doing full with features " << f << dendl;
     bufferlist full_bl;
     osdmap.encode(full_bl, f | CEPH_FEATURE_RESERVED);
     tx_size += full_bl.length();
@@ -259,6 +260,12 @@ void OSDMonitor::update_from_paxos(bool *need_bootstrap)
 	// crc mismatch and request a full map from a mon.
 	derr << __func__ << " full map CRC mismatch, resetting to canonical"
 	     << dendl;
+	dout(20) << "i had:\n";
+	full_bl.hexdump(*_dout);
+	*_dout << dendl;
+	dout(20) << "canonical is:\n";
+	orig_full_bl.hexdump(*_dout);
+	*_dout << dendl;
 	osdmap = OSDMap();
 	osdmap.decode(orig_full_bl);
       }
@@ -1245,6 +1252,10 @@ void OSDMonitor::encode_pending(MonitorDBStore::TransactionRef t)
     ::encode(tmp, fullbl, features | CEPH_FEATURE_RESERVED);
     pending_inc.full_crc = tmp.get_crc();
     pending_inc.encode_features = features;
+
+    dout(20) << "fullbl:\n";
+    fullbl.hexdump(*_dout);
+    *_dout << dendl;
 
     // include full map in the txn.  note that old monitors will
     // overwrite this.  new ones will now skip the local full map
